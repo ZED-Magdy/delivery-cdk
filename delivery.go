@@ -2,11 +2,16 @@ package main
 
 import (
 	"github.com/aws/aws-cdk-go/awscdk/v2"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awsapigateway"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsdynamodb"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
 )
+
+func setupRoutes(api awsapigateway.LambdaRestApi) {
+	api.Root().AddResource(jsii.String("categories"), nil).AddMethod(jsii.String("GET"), nil, nil)
+}
 
 type DeliveryStackProps struct {
 	awscdk.StackProps
@@ -87,6 +92,22 @@ func NewDeliveryStack(scope constructs.Construct, id string, props *DeliveryStac
 	ordersTable.GrantReadWriteData(fn)
 	orderItemsTable.GrantReadWriteData(fn)
 	deliverAddressTable.GrantReadWriteData(fn)
+
+	apiGateway := awsapigateway.NewLambdaRestApi(stack, jsii.String("deliveryAppApi"), &awsapigateway.LambdaRestApiProps{
+		Handler: fn,
+		Description: jsii.String("API Gateway for Delivery App Lambda"),
+		DeployOptions: &awsapigateway.StageOptions{
+			StageName: jsii.String("prod"),
+		},
+	})
+
+	setupRoutes(apiGateway)
+	
+	awscdk.NewCfnOutput(stack, jsii.String("ApiEndpoint"), &awscdk.CfnOutputProps{
+		Value:       apiGateway.Url(),
+		Description: jsii.String("URL of the API Gateway"),
+	})
+
 	
 	return stack
 }
