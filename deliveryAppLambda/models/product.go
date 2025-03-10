@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/ZED-Magdy/delivery-cdk/lambda/database"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
@@ -27,6 +28,7 @@ func ListAllProducts(categoryId string) ([]Product, error) {
 	}
 	data, err := ddbClient.Client.Scan(context.TODO(), &dynamodb.ScanInput{
 		TableName: &ddbClient.Table,
+		FilterExpression: aws.String("categoryId = :categoryId"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
 			":categoryId": &types.AttributeValueMemberS{Value: categoryId},
 		},
