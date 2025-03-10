@@ -10,7 +10,9 @@ import (
 )
 
 func setupRoutes(api awsapigateway.LambdaRestApi) {
+	api.Root().AddResource(jsii.String("ads"), nil).AddMethod(jsii.String("GET"), nil, nil)
 	api.Root().AddResource(jsii.String("categories"), nil).AddMethod(jsii.String("GET"), nil, nil)
+	api.Root().AddResource(jsii.String("products"), nil).AddResource(jsii.String("{categoryId}"), nil).AddMethod(jsii.String("GET"), nil, nil)
 }
 
 type DeliveryStackProps struct {
