@@ -6,7 +6,6 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	switch {
 	case request.Path == "/ads":
@@ -15,6 +14,8 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		return handlers.GetCategories(request)
 	case request.Resource == "/products/{categoryId}" || pathStartsWith(request.Path, "/products/"):
 		return handlers.GetProducts(request)
+	case request.Path == "/users/register" && request.HTTPMethod == "POST":
+		return handlers.RegisterUser(request)
 	default:
 		return events.APIGatewayProxyResponse{
 			StatusCode: 404,

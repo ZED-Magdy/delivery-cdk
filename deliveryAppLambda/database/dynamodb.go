@@ -25,6 +25,7 @@ type TableNames struct {
 	ProductsTable   TableName
 	OrdersTable     TableName
 	OrderItemsTable TableName
+	UsersTable     TableName
 }
 
 func GetTables() TableNames {
@@ -34,6 +35,7 @@ func GetTables() TableNames {
 		ProductsTable: os.Getenv("PRODUCTS_TABLE_NAME"),
 		OrdersTable:   os.Getenv("ORDERS_TABLE_NAME"),
 		OrderItemsTable: os.Getenv("ORDER_ITEMS_TABLE_NAME"),
+		UsersTable:    os.Getenv("USERS_TABLE_NAME"),
 	}
 }
 

@@ -13,6 +13,7 @@ func setupRoutes(api awsapigateway.LambdaRestApi) {
 	api.Root().AddResource(jsii.String("ads"), nil).AddMethod(jsii.String("GET"), nil, nil)
 	api.Root().AddResource(jsii.String("categories"), nil).AddMethod(jsii.String("GET"), nil, nil)
 	api.Root().AddResource(jsii.String("products"), nil).AddResource(jsii.String("{categoryId}"), nil).AddMethod(jsii.String("GET"), nil, nil)
+	api.Root().AddResource(jsii.String("users"), nil).AddResource(jsii.String("register"), nil).AddMethod(jsii.String("POST"), nil, nil)
 }
 
 type DeliveryStackProps struct {
@@ -74,6 +75,23 @@ func NewDeliveryStack(scope constructs.Construct, id string, props *DeliveryStac
 		TableName: jsii.String("deliverAddress"),
 	})
 
+	usersTable := awsdynamodb.NewTable(stack, jsii.String("users"), &awsdynamodb.TableProps{
+		PartitionKey: &awsdynamodb.Attribute{
+			Name: jsii.String("id"),
+			Type: awsdynamodb.AttributeType_STRING,
+		},
+		TableName: jsii.String("users"),
+	})
+
+	usersTable.AddGlobalSecondaryIndex(&awsdynamodb.GlobalSecondaryIndexProps{
+		IndexName: jsii.String("PhoneIndex"),
+		PartitionKey: &awsdynamodb.Attribute{
+			Name: jsii.String("phone"),
+			Type: awsdynamodb.AttributeType_STRING,
+		},
+		ProjectionType: awsdynamodb.ProjectionType_ALL,
+	})
+
 	fn := awslambda.NewFunction(stack, jsii.String("deliveryApp"), &awslambda.FunctionProps{
 		Runtime: awslambda.Runtime_PROVIDED_AL2023(),
 		Handler: jsii.String("main"),
@@ -85,6 +103,7 @@ func NewDeliveryStack(scope constructs.Construct, id string, props *DeliveryStac
 			"ORDERS_TABLE_NAME": ordersTable.TableName(),
 			"ORDER_ITEMS_TABLE_NAME": orderItemsTable.TableName(),
 			"DELIVER_ADDRESS_TABLE_NAME": deliverAddressTable.TableName(),
+			"USERS_TABLE_NAME": usersTable.TableName(),
 		},
 	})
 
@@ -94,6 +113,7 @@ func NewDeliveryStack(scope constructs.Construct, id string, props *DeliveryStac
 	ordersTable.GrantReadWriteData(fn)
 	orderItemsTable.GrantReadWriteData(fn)
 	deliverAddressTable.GrantReadWriteData(fn)
+	usersTable.GrantReadWriteData(fn)
 
 	apiGateway := awsapigateway.NewLambdaRestApi(stack, jsii.String("deliveryAppApi"), &awsapigateway.LambdaRestApiProps{
 		Handler: fn,
