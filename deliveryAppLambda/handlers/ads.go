@@ -27,7 +27,7 @@ func GetAds(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 	if err != nil {
 		return events.APIGatewayProxyResponse{
 			StatusCode: 500,
-			Body:       "Error scanning database",
+			Body:       err.Error(),
 		}, nil
 	}
 
