@@ -29,11 +29,11 @@ type TableNames struct {
 
 func GetTables() TableNames {
 	return TableNames{
-		AdsTable:      os.Getenv("ADS_TABLE"),
-		CategoriesTable: os.Getenv("CATEGORIES_TABLE"),
-		ProductsTable: os.Getenv("PRODUCTS_TABLE"),
-		OrdersTable:   os.Getenv("ORDERS_TABLE"),
-		OrderItemsTable: os.Getenv("ORDER_ITEMS_TABLE"),
+		AdsTable:      os.Getenv("ADS_TABLE_NAME"),
+		CategoriesTable: os.Getenv("CATEGORIES_TABLE_NAME"),
+		ProductsTable: os.Getenv("PRODUCTS_TABLE_NAME"),
+		OrdersTable:   os.Getenv("ORDERS_TABLE_NAME"),
+		OrderItemsTable: os.Getenv("ORDER_ITEMS_TABLE_NAME"),
 	}
 }
 
