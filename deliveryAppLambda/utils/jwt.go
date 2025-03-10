@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"os"
 	"time"
 
@@ -37,4 +38,31 @@ func GenerateJWT(userId, name, phone string) (string, error) {
 	}
 
 	return tokenString, nil
+}
+
+// ValidateToken verifies the JWT token and returns the claims if valid
+func ValidateToken(tokenString string) (*JwtClaims, error) {
+	if tokenString == "" {
+		return nil, errors.New("token is required")
+	}
+
+	jwtSecret := os.Getenv("JWT_SECRET")
+	
+	token, err := jwt.ParseWithClaims(tokenString, &JwtClaims{}, func(token *jwt.Token) (interface{}, error) {
+		// Validate the signing method
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("invalid signing method")
+		}
+		return []byte(jwtSecret), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if claims, ok := token.Claims.(*JwtClaims); ok && token.Valid {
+		return claims, nil
+	}
+
+	return nil, errors.New("invalid token")
 }
