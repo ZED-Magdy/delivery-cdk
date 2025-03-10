@@ -10,22 +10,22 @@ import (
 
 type DynamoDBClient struct {
 	Client *dynamodb.Client
-	Table  TableName
+	Table  tableName
 }
 
 type Item struct {
 	Name    string `json:"name" dynamodbav:"name"`
 	Message string `json:"message" dynamodbav:"message"`
 }
-type TableName = string
+type tableName = string
 
 type TableNames struct {
-	AdsTable       TableName
-	CategoriesTable TableName
-	ProductsTable   TableName
-	OrdersTable     TableName
-	OrderItemsTable TableName
-	UsersTable     TableName
+	AdsTable       tableName
+	CategoriesTable tableName
+	ProductsTable   tableName
+	OrdersTable     tableName
+	OrderItemsTable tableName
+	UsersTable     tableName
 }
 
 func GetTables() TableNames {
@@ -39,7 +39,7 @@ func GetTables() TableNames {
 	}
 }
 
-func NewDynamoDBClient(tableName TableName) (*DynamoDBClient, error) {
+func NewDynamoDBClient(tableName tableName) (*DynamoDBClient, error) {
 	
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if (err != nil) {

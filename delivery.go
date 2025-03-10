@@ -108,7 +108,7 @@ func NewDeliveryStack(scope constructs.Construct, id string, props *DeliveryStac
 			"ORDER_ITEMS_TABLE_NAME": orderItemsTable.TableName(),
 			"DELIVER_ADDRESS_TABLE_NAME": deliverAddressTable.TableName(),
 			"USERS_TABLE_NAME": usersTable.TableName(),
-			"JWT_SECRET": jsii.String("jwtsecret"),
+			"JWT_SECRET": jsii.String("jwtsecret"), //FIXME: use aws secrets manager in production
 		},
 	})
 
