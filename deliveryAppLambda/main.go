@@ -16,6 +16,10 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		return handlers.GetProducts(request)
 	case request.Path == "/users/register" && request.HTTPMethod == "POST":
 		return handlers.RegisterUser(request)
+	case request.Path == "/users/send-otp" && request.HTTPMethod == "POST":
+	return handlers.SendOTP(request)
+	case request.Path == "/users/verify-otp" && request.HTTPMethod == "POST":
+		return handlers.VerifyOTP(request)
 	default:
 		return events.APIGatewayProxyResponse{
 			StatusCode: 404,

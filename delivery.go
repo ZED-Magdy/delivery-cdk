@@ -13,7 +13,11 @@ func setupRoutes(api awsapigateway.LambdaRestApi) {
 	api.Root().AddResource(jsii.String("ads"), nil).AddMethod(jsii.String("GET"), nil, nil)
 	api.Root().AddResource(jsii.String("categories"), nil).AddMethod(jsii.String("GET"), nil, nil)
 	api.Root().AddResource(jsii.String("products"), nil).AddResource(jsii.String("{categoryId}"), nil).AddMethod(jsii.String("GET"), nil, nil)
-	api.Root().AddResource(jsii.String("users"), nil).AddResource(jsii.String("register"), nil).AddMethod(jsii.String("POST"), nil, nil)
+	
+	users := api.Root().AddResource(jsii.String("users"), nil)
+	users.AddResource(jsii.String("register"), nil).AddMethod(jsii.String("POST"), nil, nil)
+	users.AddResource(jsii.String("send-otp"), nil).AddMethod(jsii.String("POST"), nil, nil)
+	users.AddResource(jsii.String("verify-otp"), nil).AddMethod(jsii.String("POST"), nil, nil)
 }
 
 type DeliveryStackProps struct {
@@ -104,6 +108,7 @@ func NewDeliveryStack(scope constructs.Construct, id string, props *DeliveryStac
 			"ORDER_ITEMS_TABLE_NAME": orderItemsTable.TableName(),
 			"DELIVER_ADDRESS_TABLE_NAME": deliverAddressTable.TableName(),
 			"USERS_TABLE_NAME": usersTable.TableName(),
+			"JWT_SECRET": jsii.String("jwtsecret"),
 		},
 	})
 
