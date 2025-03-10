@@ -1,0 +1,14 @@
+template-file-path: template.yaml
+parameters:
+  FileAssetsBucketKmsKeyId: AWS_MANAGED_KEY
+  PublicAccessBlockConfiguration: 'true'
+  UseExamplePermissionsBoundary: 'false'
+  FileAssetsBucketName: ''
+  InputPermissionsBoundary: ''
+  BootstrapVariant: 'AWS CDK: Default Resources'
+  CloudFormationExecutionPolicies: ''
+  TrustedAccountsForLookup: ''
+  Qualifier: hnb659fds
+  ContainerAssetsRepositoryName: ''
+  TrustedAccounts: ''
+tags: {}
