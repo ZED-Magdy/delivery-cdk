@@ -27,20 +27,20 @@ jobs:
         id: check-lambda-changes
         run: |
           if git diff --name-only HEAD^ HEAD | grep -q '^deliveryAppLambda/'; then
-            echo "changed=true" >> $GITHUB_ENV
+            echo "changed=true" >> $GITHUB_OUTPUT
             echo "changed=true"
           else
-            echo "changed=false" >> $GITHUB_ENV
+            echo "changed=false" >> $GITHUB_OUTPUT
             echo "changed=false"
           fi
 
       - name: Build and package Lambda function
-        if: env.changed == 'true'
+        if: steps.check-lambda-changes.outputs.changed == 'true'
         working-directory: deliveryAppLambda
         run: make build
 
       - name: Upload function.zip as artifact
-        if: env.changed == 'true'
+        if: steps.check-lambda-changes.outputs.changed == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: function.zip
@@ -77,6 +77,16 @@ jobs:
         with:
           name: function.zip
           path: deliveryAppLambda/
+
+      - name: Build Lambda function if artifact doesn't exist
+        if: needs.build-lambda.outputs.lambda_changed != 'true'
+        run: |
+          # Check if function.zip exists
+          if [ ! -f deliveryAppLambda/function.zip ]; then
+            echo "No Lambda changes detected, but function.zip doesn't exist. Building it now."
+            cd deliveryAppLambda
+            make build
+          fi
 
       - name: Deploy CDK stack
         run: cdk deploy --require-approval never
