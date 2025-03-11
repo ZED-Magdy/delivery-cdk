@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ZED-Magdy/delivery-cdk/lambda/database"
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
@@ -236,4 +237,88 @@ func SendOTP(input SendOTPInput) error {
 	})
 	
 	return err
+}
+
+func GetUserByID(userID string) (*User, error) {
+	usersTable := database.GetTables().UsersTable
+	ddbClient, err := database.NewDynamoDBClient(usersTable)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := ddbClient.Client.GetItem(context.TODO(), &dynamodb.GetItemInput{
+		TableName: &ddbClient.Table,
+		Key: map[string]types.AttributeValue{
+			"id": &types.AttributeValueMemberS{Value: userID},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(response.Item) == 0 {
+		return nil, errors.New("user not found")
+	}
+
+	user := new(User)
+	err = attributevalue.UnmarshalMap(response.Item, user)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func GetUserByPhone(phone string) (*User, error) {
+	usersTable := database.GetTables().UsersTable
+	ddbClient, err := database.NewDynamoDBClient(usersTable)
+	if err != nil {
+		return nil, err
+	}
+
+	keyEx := expression.Key("phone").Equal(expression.Value(phone))
+	expr, err := expression.NewBuilder().WithKeyCondition(keyEx).Build()
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := ddbClient.Client.Query(context.TODO(), &dynamodb.QueryInput{
+		TableName:              &ddbClient.Table,
+		IndexName:              aws.String("PhoneIndex"),
+		KeyConditionExpression: expr.KeyCondition(),
+		ExpressionAttributeNames: expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if response.Count == 0 {
+		return nil, errors.New("user not found")
+	}
+
+	var users []User
+	err = attributevalue.UnmarshalListOfMaps(response.Items, &users)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(users) == 0 {
+		return nil, errors.New("user not found")
+	}
+
+	return &users[0], nil
+}
+
+func GetAuthUser(request events.APIGatewayProxyRequest) (*User, error) {
+	userID, ok := request.Headers["X-User-ID"]
+	if !ok {
+		return nil, errors.New("Unauthorized")
+	}
+
+	return &User{
+		ID:    userID,
+		Name:  request.Headers["X-User-Name"],
+		Phone: request.Headers["X-User-Phone"],
+	}, nil
 }
