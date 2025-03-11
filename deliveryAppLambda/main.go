@@ -3,34 +3,38 @@ package main
 import (
 	"github.com/ZED-Magdy/delivery-cdk/lambda/handlers"
 	"github.com/ZED-Magdy/delivery-cdk/lambda/middlewares"
+	"github.com/ZED-Magdy/delivery-cdk/lambda/router"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	switch {
-	case request.Path == "/ads":
-		return middlewares.AuthMiddleware(handlers.GetAds)(request)
-	case request.Path == "/categories":
-		return middlewares.AuthMiddleware(handlers.GetCategories)(request)
-	case request.Resource == "/products/{categoryId}" || pathStartsWith(request.Path, "/products/"):
-		return middlewares.AuthMiddleware(handlers.GetProducts)(request)
-	case request.Path == "/users/register" && request.HTTPMethod == "POST":
-		return handlers.RegisterUser(request)
-	case request.Path == "/users/send-otp" && request.HTTPMethod == "POST":
-		return handlers.SendOTP(request)
-	case request.Path == "/users/verify-otp" && request.HTTPMethod == "POST":
-		return handlers.VerifyOTP(request)
-	default:
+	router := setupRouter()
+	
+	handler, found := router.Match(request)
+	if !found {
 		return events.APIGatewayProxyResponse{
 			StatusCode: 404,
 			Body:       "Not Found",
 		}, nil
 	}
+	
+	return handler(request)
 }
 
-func pathStartsWith(path, prefix string) bool {
-	return len(path) >= len(prefix) && path[:len(prefix)] == prefix
+func setupRouter() *router.Router {
+	r := router.NewRouter()
+	
+	authMiddleware := middlewares.AdaptAuthMiddleware()
+	r.Add("/users/register", "POST", handlers.RegisterUser)
+	r.Add("/users/send-otp", "POST", handlers.SendOTP)
+	r.Add("/users/verify-otp", "POST", handlers.VerifyOTP)
+	r.Add("/ads", "GET", handlers.GetAds, authMiddleware)
+	r.Add("/categories", "GET", handlers.GetCategories, authMiddleware)
+	r.Add("/products/{categoryId}", "GET", handlers.GetProducts, authMiddleware)
+	
+	
+	return r
 }
 
 func main() {

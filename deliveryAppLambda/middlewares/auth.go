@@ -13,7 +13,6 @@ type HandlerFunc func(events.APIGatewayProxyRequest) (events.APIGatewayProxyResp
 
 func AuthMiddleware(handlerFunc HandlerFunc) HandlerFunc {
 	return func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-		// Extract token from Authorization header
 		authHeader := request.Headers["Authorization"]
 		if authHeader == "" {
 			return events.APIGatewayProxyResponse{
