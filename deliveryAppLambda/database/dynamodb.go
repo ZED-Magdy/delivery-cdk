@@ -10,44 +10,40 @@ import (
 
 type DynamoDBClient struct {
 	Client *dynamodb.Client
-	Table  tableName
+	Table  string
 }
 
-type Item struct {
-	Name    string `json:"name" dynamodbav:"name"`
-	Message string `json:"message" dynamodbav:"message"`
-}
-type tableName = string
-
-type TableNames struct {
-	AdsTable       tableName
-	CategoriesTable tableName
-	ProductsTable   tableName
-	OrdersTable     tableName
-	OrderItemsTable tableName
-	UsersTable     tableName
+type Tables struct {
+	AdsTable            string
+	CategoriesTable     string
+	ProductsTable       string
+	OrdersTable         string
+	OrderItemsTable     string
+	DeliverAddressTable string
+	UsersTable          string
 }
 
-func GetTables() TableNames {
-	return TableNames{
-		AdsTable:      os.Getenv("ADS_TABLE_NAME"),
-		CategoriesTable: os.Getenv("CATEGORIES_TABLE_NAME"),
-		ProductsTable: os.Getenv("PRODUCTS_TABLE_NAME"),
-		OrdersTable:   os.Getenv("ORDERS_TABLE_NAME"),
-		OrderItemsTable: os.Getenv("ORDER_ITEMS_TABLE_NAME"),
-		UsersTable:    os.Getenv("USERS_TABLE_NAME"),
+func GetTables() Tables {
+	return Tables{
+		AdsTable:            os.Getenv("ADS_TABLE_NAME"),
+		CategoriesTable:     os.Getenv("CATEGORIES_TABLE_NAME"),
+		ProductsTable:       os.Getenv("PRODUCTS_TABLE_NAME"),
+		OrdersTable:         os.Getenv("ORDERS_TABLE_NAME"),
+		OrderItemsTable:     os.Getenv("ORDER_ITEMS_TABLE_NAME"),
+		DeliverAddressTable: os.Getenv("DELIVER_ADDRESS_TABLE_NAME"),
+		UsersTable:          os.Getenv("USERS_TABLE_NAME"),
 	}
 }
 
-func NewDynamoDBClient(tableName tableName) (*DynamoDBClient, error) {
-	
-	cfg, err := config.LoadDefaultConfig(context.Background())
-	if (err != nil) {
+func NewDynamoDBClient(table string) (*DynamoDBClient, error) {
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
 		return nil, err
 	}
 
+	client := dynamodb.NewFromConfig(cfg)
 	return &DynamoDBClient{
-		Client: dynamodb.NewFromConfig(cfg),
-		Table:  tableName,
+		Client: client,
+		Table:  table,
 	}, nil
 }

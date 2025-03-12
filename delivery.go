@@ -18,6 +18,18 @@ func setupRoutes(api awsapigateway.LambdaRestApi) {
 	users.AddResource(jsii.String("register"), nil).AddMethod(jsii.String("POST"), nil, nil)
 	users.AddResource(jsii.String("send-otp"), nil).AddMethod(jsii.String("POST"), nil, nil)
 	users.AddResource(jsii.String("verify-otp"), nil).AddMethod(jsii.String("POST"), nil, nil)
+	
+	// Add order-related routes
+	orders := api.Root().AddResource(jsii.String("orders"), nil)
+	orders.AddMethod(jsii.String("POST"), nil, nil) // Create order
+	orders.AddMethod(jsii.String("GET"), nil, nil)  // Get user orders (history)
+	
+	// Single order routes
+	orderResource := orders.AddResource(jsii.String("{orderId}"), nil)
+	orderResource.AddMethod(jsii.String("GET"), nil, nil) // Get order details
+	
+	// Cancel order
+	orderResource.AddResource(jsii.String("cancel"), nil).AddMethod(jsii.String("POST"), nil, nil)
 }
 
 type DeliveryStackProps struct {

@@ -39,9 +39,21 @@ func RegisterUser(request events.APIGatewayProxyRequest) (events.APIGatewayProxy
 		}, nil
 	}
 
+	response := map[string]string{
+		"message": "User registered successfully",
+	}
+
+	jsonResponse, err := json.Marshal(response)
+	if err != nil {
+		return events.APIGatewayProxyResponse{
+			StatusCode: http.StatusInternalServerError,
+			Body:       "Error converting response to JSON",
+		}, nil
+	}
+
 	return events.APIGatewayProxyResponse{
 		StatusCode: http.StatusCreated,
-		Body:       "{\"message\": \"User registered successfully\"}",
+		Body:       string(jsonResponse),
 		Headers: map[string]string{
 			"Content-Type": "application/json",
 		},
@@ -96,11 +108,12 @@ func VerifyOTP(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRes
 		}, nil
 	}
 
-	// Prepare response with user data and token
-	response := struct {
+	type Response struct {
 		User  *models.User `json:"user"`
 		Token string       `json:"token"`
-	}{
+	}
+
+	response := Response{
 		User:  user,
 		Token: token,
 	}
