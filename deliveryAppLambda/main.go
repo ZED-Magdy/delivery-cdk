@@ -23,6 +23,8 @@ func setupRouter() *router.Router {
 	r.Add("/orders", "GET", handlers.GetUserOrders, authMiddleware)
 	r.Add("/orders/{orderId}", "GET", handlers.GetOrderDetails, authMiddleware)
 	r.Add("/orders/{orderId}/cancel", "POST", handlers.CancelOrder, authMiddleware)
+	r.Add("/delivery-addresses", "POST", handlers.CreateDeliveryAddress, authMiddleware)
+	r.Add("/delivery-addresses", "GET", handlers.GetUserDeliveryAddresses, authMiddleware)
 	
 	return r
 }

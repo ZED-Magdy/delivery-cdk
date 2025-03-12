@@ -26,6 +26,10 @@ func setupRoutes(api awsapigateway.LambdaRestApi) {
 	orderResource := orders.AddResource(jsii.String("{orderId}"), nil)
 	orderResource.AddMethod(jsii.String("GET"), nil, nil)
 	orderResource.AddResource(jsii.String("cancel"), nil).AddMethod(jsii.String("POST"), nil, nil)
+	
+	deliveryAddresses := api.Root().AddResource(jsii.String("delivery-addresses"), nil)
+	deliveryAddresses.AddMethod(jsii.String("POST"), nil, nil)
+	deliveryAddresses.AddMethod(jsii.String("GET"), nil, nil)
 }
 
 type DeliveryStackProps struct {
