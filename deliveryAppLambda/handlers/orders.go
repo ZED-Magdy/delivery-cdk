@@ -9,15 +9,13 @@ import (
 )
 
 type CreateOrderRequest struct {
-	DeliveryAddressId string                 `json:"deliveryAddressId"`
-	Items             []CreateOrderItemInput `json:"items"`
+	DeliveryAddressId string              `json:"deliveryAddressId"`
+	Items             []OrderItemRequest  `json:"items"`
 }
 
-type CreateOrderItemInput struct {
-	ProductId string  `json:"productId"`
-	Name      string  `json:"name"`
-	Price     float64 `json:"price"`
-	Quantity  int     `json:"quantity"`
+type OrderItemRequest struct {
+	ProductId string `json:"productId"`
+	Quantity  int    `json:"quantity"`
 }
 
 type OrderResponse struct {
@@ -25,9 +23,7 @@ type OrderResponse struct {
 	Items []models.OrderItem `json:"items,omitempty"`
 }
 
-// CreateOrder creates a new order with items
 func CreateOrder(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	// Verify user authentication
 	user, err := models.GetAuthUser(request)
 	if err != nil {
 		return events.APIGatewayProxyResponse{
@@ -38,7 +34,6 @@ func CreateOrder(request events.APIGatewayProxyRequest) (events.APIGatewayProxyR
 
 	userId := user.ID
 
-	// Parse request body
 	var createReq CreateOrderRequest
 	err = json.Unmarshal([]byte(request.Body), &createReq)
 	if err != nil {
@@ -48,13 +43,44 @@ func CreateOrder(request events.APIGatewayProxyRequest) (events.APIGatewayProxyR
 		}, nil
 	}
 
-	// Calculate total from items
-	var total float64
-	for _, item := range createReq.Items {
-		total += item.Price * float64(item.Quantity)
+	address, err := models.GetDeliveryAddressById(createReq.DeliveryAddressId)
+	if err != nil {
+		return events.APIGatewayProxyResponse{
+			StatusCode: 422,
+			Body:       "Invalid delivery address: " + err.Error(),
+		}, nil
+	}
+	
+	if address.UserId != userId {
+		return events.APIGatewayProxyResponse{
+			StatusCode: 403,
+			Body:       "You can only use delivery addresses that belong to you",
+		}, nil
 	}
 
-	// Create the order
+	var total float64
+	var orderItems []models.OrderItem
+	
+	for _, itemReq := range createReq.Items {
+		product, err := models.GetProductById(itemReq.ProductId)
+		if (err != nil) {
+			return events.APIGatewayProxyResponse{
+				StatusCode: 422,
+				Body:       fmt.Sprintf("Invalid product ID %s: %s", itemReq.ProductId, err.Error()),
+			}, nil
+		}
+		
+		itemTotal := product.Price * float64(itemReq.Quantity)
+		total += itemTotal
+		
+		orderItems = append(orderItems, models.OrderItem{
+			ProductId: product.Id,
+			Name:      product.Name,
+			Price:     product.Price,
+			Quantity:  itemReq.Quantity,
+		})
+	}
+
 	order, err := models.CreateOrder(models.Order{
 		UserId:            userId,
 		Total:             total,
@@ -68,31 +94,22 @@ func CreateOrder(request events.APIGatewayProxyRequest) (events.APIGatewayProxyR
 		}, nil
 	}
 
-	// Create order items
-	orderItems := []models.OrderItem{}
-	for _, item := range createReq.Items {
-		orderItem, err := models.CreateOrderItem(models.OrderItem{
-			OrderId:   order.Id,
-			ProductId: item.ProductId,
-			Name:      item.Name,
-			Price:     item.Price,
-			Quantity:  item.Quantity,
-		})
+	var savedOrderItems []models.OrderItem
+	for _, item := range orderItems {
+		item.OrderId = order.Id
+		savedItem, err := models.CreateOrderItem(item)
 		if err != nil {
-			// If there's an error, we should ideally roll back the order
-			// For simplicity, we're just returning an error
 			return events.APIGatewayProxyResponse{
 				StatusCode: 500,
 				Body:       "Error creating order item: " + err.Error(),
 			}, nil
 		}
-		orderItems = append(orderItems, *orderItem)
+		savedOrderItems = append(savedOrderItems, *savedItem)
 	}
 
-	// Prepare response
 	response := OrderResponse{
 		Order: *order,
-		Items: orderItems,
+		Items: savedOrderItems,
 	}
 
 	jsonBody, err := json.Marshal(response)
@@ -109,9 +126,7 @@ func CreateOrder(request events.APIGatewayProxyRequest) (events.APIGatewayProxyR
 	}, nil
 }
 
-// CancelOrder cancels an order if it is in pending status
 func CancelOrder(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	// Verify user authentication
 	user, err := models.GetAuthUser(request)
 	if err != nil {
 		return events.APIGatewayProxyResponse{
@@ -122,7 +137,6 @@ func CancelOrder(request events.APIGatewayProxyRequest) (events.APIGatewayProxyR
 
 	userId := user.ID
 
-	// Get order ID from path parameters
 	orderId := request.PathParameters["orderId"]
 	if orderId == "" {
 		return events.APIGatewayProxyResponse{
@@ -131,7 +145,6 @@ func CancelOrder(request events.APIGatewayProxyRequest) (events.APIGatewayProxyR
 		}, nil
 	}
 
-	// Get the order
 	order, err := models.GetOrderById(orderId)
 	if err != nil {
 		return events.APIGatewayProxyResponse{
@@ -140,7 +153,6 @@ func CancelOrder(request events.APIGatewayProxyRequest) (events.APIGatewayProxyR
 		}, nil
 	}
 
-	// Check if the order belongs to the authenticated user
 	if order.UserId != userId {
 		return events.APIGatewayProxyResponse{
 			StatusCode: 403,
@@ -148,7 +160,6 @@ func CancelOrder(request events.APIGatewayProxyRequest) (events.APIGatewayProxyR
 		}, nil
 	}
 
-	// Update order status to canceled
 	updatedOrder, err := models.UpdateOrderStatus(orderId, models.StatusCanceled)
 	if err != nil {
 		return events.APIGatewayProxyResponse{
@@ -171,9 +182,7 @@ func CancelOrder(request events.APIGatewayProxyRequest) (events.APIGatewayProxyR
 	}, nil
 }
 
-// GetUserOrders retrieves all orders for the authenticated user
 func GetUserOrders(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	// Verify user authentication
 	user, err := models.GetAuthUser(request)
 	if err != nil {
 		return events.APIGatewayProxyResponse{
@@ -184,7 +193,6 @@ func GetUserOrders(request events.APIGatewayProxyRequest) (events.APIGatewayProx
 
 	userId := user.ID
 
-	// Get orders for the user
 	orders, err := models.GetUserOrders(userId)
 	if err != nil {
 		return events.APIGatewayProxyResponse{
@@ -193,10 +201,9 @@ func GetUserOrders(request events.APIGatewayProxyRequest) (events.APIGatewayProx
 		}, nil
 	}
 
-	// For each order, get its items (optional, depending on your needs)
 	var orderResponses []OrderResponse
 	for _, order := range orders {
-		orderCopy := order // Create a copy to avoid issues with pointers
+		orderCopy := order
 		response := OrderResponse{
 			Order: orderCopy,
 		}
@@ -217,9 +224,7 @@ func GetUserOrders(request events.APIGatewayProxyRequest) (events.APIGatewayProx
 	}, nil
 }
 
-// GetOrderDetails retrieves detailed information about a specific order
 func GetOrderDetails(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	// Verify user authentication
 	user, err := models.GetAuthUser(request)
 	if err != nil {
 		return events.APIGatewayProxyResponse{
@@ -230,7 +235,6 @@ func GetOrderDetails(request events.APIGatewayProxyRequest) (events.APIGatewayPr
 
 	userId := user.ID
 
-	// Get order ID from path parameters
 	orderId := request.PathParameters["orderId"]
 	if orderId == "" {
 		return events.APIGatewayProxyResponse{
@@ -239,7 +243,6 @@ func GetOrderDetails(request events.APIGatewayProxyRequest) (events.APIGatewayPr
 		}, nil
 	}
 
-	// Get the order
 	order, err := models.GetOrderById(orderId)
 	if err != nil {
 		return events.APIGatewayProxyResponse{
@@ -248,7 +251,6 @@ func GetOrderDetails(request events.APIGatewayProxyRequest) (events.APIGatewayPr
 		}, nil
 	}
 
-	// Check if the order belongs to the authenticated user
 	if order.UserId != userId {
 		return events.APIGatewayProxyResponse{
 			StatusCode: 403,
@@ -256,7 +258,6 @@ func GetOrderDetails(request events.APIGatewayProxyRequest) (events.APIGatewayPr
 		}, nil
 	}
 
-	// Get order items
 	items, err := models.GetOrderItems(orderId)
 	if err != nil {
 		return events.APIGatewayProxyResponse{

@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/ZED-Magdy/delivery-cdk/lambda/database"
@@ -13,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
@@ -36,6 +39,13 @@ type OTPVerificationInput struct {
 
 type SendOTPInput struct {
 	Phone string `json:"phone" validate:"required"`
+}
+
+type Claims struct {
+	UserID string `json:"userId"`
+	Name   string `json:"name"`
+	Phone  string `json:"phone"`
+	jwt.RegisteredClaims
 }
 
 func RegisterUser(input UserRegistrationInput) (*User, error) {
@@ -311,14 +321,38 @@ func GetUserByPhone(phone string) (*User, error) {
 }
 
 func GetAuthUser(request events.APIGatewayProxyRequest) (*User, error) {
-	userID, ok := request.Headers["X-User-ID"]
-	if !ok {
-		return nil, errors.New("Unauthorized")
+	authHeader := request.Headers["Authorization"]
+	if authHeader == "" {
+		return nil, errors.New("authorization header is required")
+	}
+
+	// Extract the token from the Authorization header
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || parts[0] != "Bearer" {
+		return nil, errors.New("authorization header format must be Bearer {token}")
+	}
+	tokenString := parts[1]
+
+	// Parse and validate the token
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		return []byte(os.Getenv("JWT_SECRET")), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !token.Valid {
+		return nil, errors.New("invalid token")
 	}
 
 	return &User{
-		ID:    userID,
-		Name:  request.Headers["X-User-Name"],
-		Phone: request.Headers["X-User-Phone"],
+		ID:    claims.UserID,
+		Name:  claims.Name,
+		Phone: claims.Phone,
 	}, nil
 }

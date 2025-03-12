@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// OrderItem represents an item in an order
 type OrderItem struct {
 	Id        string  `json:"id" dynamodbav:"id"`
 	OrderId   string  `json:"orderId" dynamodbav:"orderId"`
@@ -21,7 +20,6 @@ type OrderItem struct {
 	Quantity  int     `json:"quantity" dynamodbav:"quantity"`
 }
 
-// CreateOrderItem adds a new item to an order
 func CreateOrderItem(orderItem OrderItem) (*OrderItem, error) {
 	orderItemsTable := database.GetTables().OrderItemsTable
 	ddbClient, err := database.NewDynamoDBClient(orderItemsTable)
@@ -29,7 +27,6 @@ func CreateOrderItem(orderItem OrderItem) (*OrderItem, error) {
 		return nil, err
 	}
 
-	// Generate a new UUID for the item ID if not provided
 	if orderItem.Id == "" {
 		orderItem.Id = uuid.New().String()
 	}
@@ -50,7 +47,6 @@ func CreateOrderItem(orderItem OrderItem) (*OrderItem, error) {
 	return &orderItem, nil
 }
 
-// GetOrderItems retrieves all items for a specific order
 func GetOrderItems(orderId string) ([]OrderItem, error) {
 	orderItemsTable := database.GetTables().OrderItemsTable
 	ddbClient, err := database.NewDynamoDBClient(orderItemsTable)
@@ -78,9 +74,7 @@ func GetOrderItems(orderId string) ([]OrderItem, error) {
 	return orderItems, nil
 }
 
-// DeleteOrderItems deletes all items for a specific order (used when canceling an order)
 func DeleteOrderItems(orderId string) error {
-	// First get all items for this order
 	items, err := GetOrderItems(orderId)
 	if err != nil {
 		return err
@@ -92,7 +86,6 @@ func DeleteOrderItems(orderId string) error {
 		return err
 	}
 
-	// Delete each item
 	for _, item := range items {
 		_, err = ddbClient.Client.DeleteItem(context.TODO(), &dynamodb.DeleteItemInput{
 			TableName: &ddbClient.Table,

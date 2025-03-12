@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/ZED-Magdy/delivery-cdk/lambda/database"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -10,7 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
-// Product represents a product in the system
 type Product struct {
 	Id          string  `json:"id" dynamodbav:"id"`
 	Name        string  `json:"name" dynamodbav:"name"`
@@ -45,4 +45,34 @@ func ListAllProducts(categoryId string) ([]Product, error) {
 	}
 
 	return products, nil
+}
+
+func GetProductById(productId string) (*Product, error) {
+	productsTable := database.GetTables().ProductsTable
+	ddbClient, err := database.NewDynamoDBClient(productsTable)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := ddbClient.Client.GetItem(context.TODO(), &dynamodb.GetItemInput{
+		TableName: &ddbClient.Table,
+		Key: map[string]types.AttributeValue{
+			"id": &types.AttributeValueMemberS{Value: productId},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if result.Item == nil {
+		return nil, fmt.Errorf("product not found")
+	}
+
+	var product Product
+	err = attributevalue.UnmarshalMap(result.Item, &product)
+	if err != nil {
+		return nil, err
+	}
+
+	return &product, nil
 }

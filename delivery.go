@@ -19,16 +19,12 @@ func setupRoutes(api awsapigateway.LambdaRestApi) {
 	users.AddResource(jsii.String("send-otp"), nil).AddMethod(jsii.String("POST"), nil, nil)
 	users.AddResource(jsii.String("verify-otp"), nil).AddMethod(jsii.String("POST"), nil, nil)
 	
-	// Add order-related routes
 	orders := api.Root().AddResource(jsii.String("orders"), nil)
-	orders.AddMethod(jsii.String("POST"), nil, nil) // Create order
-	orders.AddMethod(jsii.String("GET"), nil, nil)  // Get user orders (history)
+	orders.AddMethod(jsii.String("POST"), nil, nil)
+	orders.AddMethod(jsii.String("GET"), nil, nil)
 	
-	// Single order routes
 	orderResource := orders.AddResource(jsii.String("{orderId}"), nil)
-	orderResource.AddMethod(jsii.String("GET"), nil, nil) // Get order details
-	
-	// Cancel order
+	orderResource.AddMethod(jsii.String("GET"), nil, nil)
 	orderResource.AddResource(jsii.String("cancel"), nil).AddMethod(jsii.String("POST"), nil, nil)
 }
 

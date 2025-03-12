@@ -13,7 +13,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// OrderStatus represents the status of an order
 type OrderStatus string
 
 const (
@@ -24,7 +23,6 @@ const (
 	StatusCanceled   OrderStatus = "canceled"
 )
 
-// Order represents an order in the system
 type Order struct {
 	Id                string      `json:"id" dynamodbav:"id"`
 	UserId            string      `json:"userId" dynamodbav:"userId"`
@@ -34,7 +32,6 @@ type Order struct {
 	CreatedAt         string      `json:"createdAt" dynamodbav:"createdAt"`
 }
 
-// CreateOrder creates a new order in the database
 func CreateOrder(order Order) (*Order, error) {
 	ordersTable := database.GetTables().OrdersTable
 	ddbClient, err := database.NewDynamoDBClient(ordersTable)
@@ -42,12 +39,10 @@ func CreateOrder(order Order) (*Order, error) {
 		return nil, err
 	}
 
-	// Generate a new UUID for the order ID if not provided
 	if order.Id == "" {
 		order.Id = uuid.New().String()
 	}
 	
-	// Set initial status and creation time if not provided
 	if order.Status == "" {
 		order.Status = StatusPending
 	}
@@ -71,7 +66,6 @@ func CreateOrder(order Order) (*Order, error) {
 	return &order, nil
 }
 
-// GetOrderById retrieves an order by its ID
 func GetOrderById(orderId string) (*Order, error) {
 	ordersTable := database.GetTables().OrdersTable
 	ddbClient, err := database.NewDynamoDBClient(ordersTable)
@@ -102,7 +96,6 @@ func GetOrderById(orderId string) (*Order, error) {
 	return &order, nil
 }
 
-// UpdateOrderStatus updates the status of an order
 func UpdateOrderStatus(orderId string, status OrderStatus) (*Order, error) {
 	ordersTable := database.GetTables().OrdersTable
 	ddbClient, err := database.NewDynamoDBClient(ordersTable)
@@ -110,18 +103,15 @@ func UpdateOrderStatus(orderId string, status OrderStatus) (*Order, error) {
 		return nil, err
 	}
 
-	// First check if the order exists and get its current status
 	order, err := GetOrderById(orderId)
 	if err != nil {
 		return nil, err
 	}
 	
-	// Prevent cancellation if the order is not pending
 	if status == StatusCanceled && order.Status != StatusPending {
 		return nil, fmt.Errorf("only pending orders can be canceled")
 	}
 
-	// Update the order status
 	_, err = ddbClient.Client.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
 		TableName: &ddbClient.Table,
 		Key: map[string]types.AttributeValue{
@@ -139,12 +129,10 @@ func UpdateOrderStatus(orderId string, status OrderStatus) (*Order, error) {
 		return nil, err
 	}
 
-	// Return the updated order
 	order.Status = status
 	return order, nil
 }
 
-// GetUserOrders retrieves all orders for a specific user
 func GetUserOrders(userId string) ([]Order, error) {
 	ordersTable := database.GetTables().OrdersTable
 	ddbClient, err := database.NewDynamoDBClient(ordersTable)
@@ -152,8 +140,6 @@ func GetUserOrders(userId string) ([]Order, error) {
 		return nil, err
 	}
 
-	// Scan the table and filter by userId
-	// In a production environment, we would use a GSI on userId
 	result, err := ddbClient.Client.Scan(context.TODO(), &dynamodb.ScanInput{
 		TableName:        &ddbClient.Table,
 		FilterExpression: aws.String("userId = :userId"),

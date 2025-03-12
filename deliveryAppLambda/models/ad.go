@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 )
 
-// Ad represents an advertisement in the system
 type Ad struct {
 	Id         string `json:"id" dynamodbav:"id"`
 	ImageUrl   string `json:"imageUrl" dynamodbav:"imageUrl"`
@@ -16,7 +15,6 @@ type Ad struct {
 	ActionType string `json:"actionType" dynamodbav:"actionType"`
 }
 
-// ListAll retrieves all ads from the database
 func ListAll() ([]Ad, error) {
 	adsTable := database.GetTables().AdsTable
 	ddbClient, err := database.NewDynamoDBClient(adsTable)
