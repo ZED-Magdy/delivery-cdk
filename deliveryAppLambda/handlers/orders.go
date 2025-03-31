@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ZED-Magdy/delivery-cdk/lambda/models"
+	"github.com/ZED-Magdy/delivery-cdk/lambda/services"
 	"github.com/aws/aws-lambda-go/events"
 )
 
@@ -107,6 +108,14 @@ func CreateOrder(request events.APIGatewayProxyRequest) (events.APIGatewayProxyR
 		savedOrderItems = append(savedOrderItems, *savedItem)
 	}
 
+	// After the order is created successfully
+	// Add this after the order and order items are saved successfully
+	err = services.SendOrderToQueue(order.Id, string(models.StatusPending), userId)
+	if err != nil {
+		// Log the error but don't fail the order creation
+		fmt.Printf("Error sending order to queue: %v\n", err)
+	}
+
 	response := OrderResponse{
 		Order: *order,
 		Items: savedOrderItems,
@@ -166,6 +175,13 @@ func CancelOrder(request events.APIGatewayProxyRequest) (events.APIGatewayProxyR
 			StatusCode: 400,
 			Body:       err.Error(),
 		}, nil
+	}
+
+	// Send the updated order status to the queue for processing
+	err = services.SendOrderToQueue(orderId, string(models.StatusCanceled), userId)
+	if err != nil {
+		// Log the error but don't fail the cancel operation
+		fmt.Printf("Error sending canceled order to queue: %v\n", err)
 	}
 
 	jsonBody, err := json.Marshal(updatedOrder)
