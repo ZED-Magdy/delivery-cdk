@@ -7,6 +7,8 @@ A serverless application for managing product deliveries built with AWS CDK and 
 - **AWS Cloud Development Kit (CDK)** - Infrastructure as Code framework
 - **AWS Lambda** - Serverless compute service for backend operations
 - **Amazon DynamoDB** - NoSQL database for storing application data
+- **Amazon SQS** - Queue service for order processing
+- **Amazon SNS** - Notification service for order status updates
 - **Go (Golang)** - Programming language for both infrastructure and business logic
 - **AWS CloudFormation** - Provisioning and managing AWS resources
 
